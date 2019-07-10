@@ -1,0 +1,126 @@
+<html>
+    <head>
+
+        <script src="https://cdn.jsdelivr.net/gh/jamesssooi/Croppr.js@2.3.0/dist/croppr.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/gh/jamesssooi/Croppr.js@2.3.0/dist/croppr.min.css" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet"> 
+        <title>Recorta tu imagen y transforma a base64</title>
+        <style>
+         .container-demo {
+             display: flex;
+             flex-wrap: wrap;
+             font-family: 'Montserrat', sans-serif;
+         }
+         .container-demo__title {
+             font-family: 'Montserrat', sans-serif;
+             text-align: center;
+             margin: 2rem 0;
+         }
+         .container-demo .col {
+             width: 50%;
+             min-height: 10rem;
+             text-align: center;
+         }
+         .container-demo img {
+             width: 200px;
+         }
+         .container-demo canvas {
+             object-fit: cover;
+             width: 200px;
+             height: 200px;
+         }
+         .container-demo code {
+             display: block;
+             height: 100px;
+             overflow-y: auto;
+             margin-bottom: 1rem;
+         }
+        </style>
+    </head>
+    <body>
+        <h1 class="container-demo__title">Recorta tu imagen y transforma a base64</h1>
+        <div class="container-demo">
+            <div class="col">
+                <h2>1 Introduce tu imagen</h2>
+                <input type="file" id="image">
+            </div>
+            <div class="col">
+                <h2>2 Recorta</h2>
+                <img id="croppr" src="">
+            </div>
+            <div class="col">
+                <h2>3 Previsualiza el resultado</h2>
+                <canvas id="preview"></canvas>
+            </div>
+            <div class="col">
+                <h2>4 Copia el código Base64</h2>
+                <code id="base64" onclick="selectText('base64')"></code>
+                <h3>Ejemplo HTML</h3>
+                <code id="base64HTML"  onclick="selectText('base64HTML')">&lt;img src=""&gt;</code>
+            </div>
+        </div>
+
+        <script>
+
+
+         window.onload = function() {
+             
+
+             let inputImage = document.querySelector('#image');
+             
+             inputImage.addEventListener('change', generarRecorte, false);
+         }
+
+         function generarRecorte(e) {
+             // Recortar
+             let urlImage = URL.createObjectURL(e.target.files[0]);
+
+             document.querySelector('#croppr').setAttribute('src', urlImage);
+
+            function recortarImagen(data) {
+                    // Variables
+                    const startX = data.x;
+                    const startY = data.y;
+                    const newWidth = data.width;
+                    const newHeight = data.height;
+                    const ratio = 1;
+                    let outImage64 = '';
+                    let myCanvas = document.querySelector('#preview');
+                    myCanvas.width = newWidth;
+                    myCanvas.height = newHeight;
+                    let ctx = myCanvas.getContext('2d');
+                    let myImg = new Image();
+                    myImg.onload = function() {
+                        ctx.drawImage(myImg, startX, startY, newWidth * ratio, newHeight * ratio, 0, 0, newWidth, newHeight);
+                        outImage64 = myCanvas.toDataURL("image/jpeg");
+                        //console.log('Codigo base64' + outImage64);
+                        document.querySelector('#base64').textContent = outImage64;
+                        document.querySelector('#base64HTML').textContent = '<img src="' + outImage64.slice(0, 40) + '...">';
+
+                    }
+                    myImg.src = urlImage;
+
+            }
+
+             let croppr = new Croppr('#croppr', {
+                 aspectRatio: 1,
+                 onCropEnd: recortarImagen,
+                 })
+             };
+
+         function selectText(containerid) {
+             if (document.selection) { // IE
+                 var range = document.body.createTextRange();
+                 range.moveToElementText(document.getElementById(containerid));
+                 range.select();
+             } else if (window.getSelection) {
+                 var range = document.createRange();
+                 range.selectNode(document.getElementById(containerid));
+                 window.getSelection().removeAllRanges();
+                 window.getSelection().addRange(range);
+             }
+}
+        </script>
+        </body>
+</html>
+
