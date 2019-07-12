@@ -6,10 +6,27 @@
         <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet"> 
         <title>Recorta tu imagen y transforma a base64</title>
         <style>
+         body {
+             background-color: #353a47;
+             color: white;
+             font-family: 'Montserrat', sans-serif;
+         }
+
+         footer {
+             text-align: center;
+             margin: 2rem 0;
+         }
+         footer a {
+             color: white;
+             text-decoration: none;
+         }
+         .container {
+             max-width: 1000px;
+             margin: 0 auto;
+         }
          .container-demo {
              display: flex;
              flex-wrap: wrap;
-             font-family: 'Montserrat', sans-serif;
          }
          .container-demo__title {
              font-family: 'Montserrat', sans-serif;
@@ -36,91 +53,133 @@
              margin-bottom: 1rem;
          }
         </style>
+        <script>
+         document.addEventListener('DOMContentLoaded', () => {
+
+             // Input File
+             const inputImage = document.querySelector('#image');
+             // Nodo donde estará el editor
+             const editor = document.querySelector('#editor');
+             // El canvas donde se mostrará la previa
+             const miCanvas = document.querySelector('#preview');
+             // Contexto del canvas
+             const contexto = miCanvas.getContext('2d');
+             // Ruta de la imagen seleccionada
+             let urlImage = undefined;
+             // Evento disparado cuando se adjunte una imagen
+             inputImage.addEventListener('change', abrirEditor, false);
+
+             /**
+              * Método que abre el editor con la imagen seleccionada
+              */
+             function abrirEditor(e) {
+                 // Obtiene la imagen
+                 urlImage = URL.createObjectURL(e.target.files[0]);
+
+                 // Borra editor en caso que existiera una imagen previa
+                 editor.innerHTML = '';
+                 let cropprImg = document.createElement('img');
+                 cropprImg.setAttribute('id', 'croppr');
+                 editor.appendChild(cropprImg);
+
+                 // Limpia la previa en caso que existiera algún elemento previo
+                 contexto.clearRect(0, 0, miCanvas.width, miCanvas.height);
+
+                 // Envia la imagen al editor para su recorte
+                 document.querySelector('#croppr').setAttribute('src', urlImage);
+
+                 // Crea el editor
+                 new Croppr('#croppr', {
+                     aspectRatio: 1,
+                     startSize: [70, 70],
+                     onCropEnd: recortarImagen
+                 })
+             }
+
+             /**
+              * Método que recorta la imagen con las coordenadas proporcionadas con croppr.js
+              */
+             function recortarImagen(data) {
+                 // Variables
+                 const inicioX = data.x;
+                 const inicioY = data.y;
+                 const nuevoAncho = data.width;
+                 const nuevaAltura = data.height;
+                 const zoom = 1;
+                 let imagenEn64 = '';
+                 // La imprimo
+                 miCanvas.width = nuevoAncho;
+                 miCanvas.height = nuevaAltura;
+                 // La declaro
+                 let miNuevaImagenTemp = new Image();
+                 // Cuando la imagen se carge se procederá al recorte
+                 miNuevaImagenTemp.onload = function() {
+                     // Se recorta
+                     contexto.drawImage(miNuevaImagenTemp, inicioX, inicioY, nuevoAncho * zoom, nuevaAltura * zoom, 0, 0, nuevoAncho, nuevaAltura);
+                     // Se transforma a base64
+                     imagenEn64 = miCanvas.toDataURL("image/jpeg");
+                     // Mostramos el código generado
+                     document.querySelector('#base64').textContent = imagenEn64;
+                     document.querySelector('#base64HTML').textContent = '<img src="' + imagenEn64.slice(0, 40) + '...">';
+
+                 }
+                 // Proporciona la imagen cruda, sin editarla por ahora
+                 miNuevaImagenTemp.src = urlImage;
+             }
+
+             /////////////////////// DEMO //////////////////////////////////
+             /**
+              * Método que seleccona todo el texto
+              */
+             function selectText(e) {
+                 let node = e.target;
+                 if (document.selection) { // IE
+                     var range = document.body.createTextRange();
+                     range.moveToElementText(node);
+                     range.select();
+                 } else if (window.getSelection) {
+                     var range = document.createRange();
+                     range.selectNode(node);
+                     window.getSelection().removeAllRanges();
+                     window.getSelection().addRange(range);
+                 }
+             }
+             document.querySelector('#base64').addEventListener('click', selectText, false);
+             document.querySelector('#base64HTML').addEventListener('click', selectText, false);
+         });
+        </script>
     </head>
     <body>
+        <div class="container">
         <h1 class="container-demo__title">Recorta tu imagen y transforma a base64</h1>
         <div class="container-demo">
             <div class="col">
                 <h2>1 Introduce tu imagen</h2>
+                <!-- Input file donde se adjunta la imagen -->
                 <input type="file" id="image">
             </div>
             <div class="col">
                 <h2>2 Recorta</h2>
-                <img id="croppr" src="">
+                <!-- Editor donde se recortará la imagen con la ayuda de croppr.js -->
+                <div id="editor"></div>
             </div>
             <div class="col">
                 <h2>3 Previsualiza el resultado</h2>
+                <!-- Previa del recorte -->
                 <canvas id="preview"></canvas>
             </div>
             <div class="col">
                 <h2>4 Copia el código Base64</h2>
-                <code id="base64" onclick="selectText('base64')"></code>
+                <!-- Muestra de la imagen recortada en Base64 -->
+                <code id="base64"></code>
                 <h3>Ejemplo HTML</h3>
-                <code id="base64HTML"  onclick="selectText('base64HTML')">&lt;img src=""&gt;</code>
+                <code id="base64HTML">&lt;img src=""&gt;</code>
             </div>
         </div>
-
-        <script>
-
-
-         window.onload = function() {
-             
-
-             let inputImage = document.querySelector('#image');
-             
-             inputImage.addEventListener('change', generarRecorte, false);
-         }
-
-         function generarRecorte(e) {
-             // Recortar
-             let urlImage = URL.createObjectURL(e.target.files[0]);
-
-             document.querySelector('#croppr').setAttribute('src', urlImage);
-
-            function recortarImagen(data) {
-                    // Variables
-                    const startX = data.x;
-                    const startY = data.y;
-                    const newWidth = data.width;
-                    const newHeight = data.height;
-                    const ratio = 1;
-                    let outImage64 = '';
-                    let myCanvas = document.querySelector('#preview');
-                    myCanvas.width = newWidth;
-                    myCanvas.height = newHeight;
-                    let ctx = myCanvas.getContext('2d');
-                    let myImg = new Image();
-                    myImg.onload = function() {
-                        ctx.drawImage(myImg, startX, startY, newWidth * ratio, newHeight * ratio, 0, 0, newWidth, newHeight);
-                        outImage64 = myCanvas.toDataURL("image/jpeg");
-                        //console.log('Codigo base64' + outImage64);
-                        document.querySelector('#base64').textContent = outImage64;
-                        document.querySelector('#base64HTML').textContent = '<img src="' + outImage64.slice(0, 40) + '...">';
-
-                    }
-                    myImg.src = urlImage;
-
-            }
-
-             let croppr = new Croppr('#croppr', {
-                 aspectRatio: 1,
-                 onCropEnd: recortarImagen,
-                 })
-             };
-
-         function selectText(containerid) {
-             if (document.selection) { // IE
-                 var range = document.body.createTextRange();
-                 range.moveToElementText(document.getElementById(containerid));
-                 range.select();
-             } else if (window.getSelection) {
-                 var range = document.createRange();
-                 range.selectNode(document.getElementById(containerid));
-                 window.getSelection().removeAllRanges();
-                 window.getSelection().addRange(range);
-             }
-}
-        </script>
-        </body>
+        </div>
+        <footer>
+            <a href="https://programadorwebvalencia.com/blog">Programador Web Valencia</a>
+        </footer>
+    </body>
 </html>
 
